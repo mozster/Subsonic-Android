@@ -53,6 +53,7 @@ import net.sourceforge.subsonic.androidapp.domain.RepeatMode;
 import net.sourceforge.subsonic.androidapp.domain.Version;
 import net.sourceforge.subsonic.androidapp.provider.SubsonicAppWidgetProvider4x1;
 import net.sourceforge.subsonic.androidapp.receiver.MediaButtonIntentReceiver;
+import net.sourceforge.subsonic.androidapp.service.DownloadService;
 import net.sourceforge.subsonic.androidapp.service.DownloadServiceImpl;
 import org.apache.http.HttpEntity;
 
@@ -92,6 +93,10 @@ public class Util extends DownloadActivity {
 
     public static final String EVENT_META_CHANGED = "net.sourceforge.subsonic.androidapp.EVENT_META_CHANGED";
     public static final String EVENT_PLAYSTATE_CHANGED = "net.sourceforge.subsonic.androidapp.EVENT_PLAYSTATE_CHANGED";
+    
+    //CyanogenMod AVRCP 1.3 Intents
+    public static final String CM_AVRCP_PLAYSTATE_CHANGED = "com.android.music.playstatechanged";
+    public static final String CM_AVRCP_METADATA_CHANGED = "com.android.music.metachanged";
 
     private static final Map<Integer, Version> SERVER_REST_VERSIONS = new ConcurrentHashMap<Integer, Version>();
 
@@ -753,6 +758,46 @@ public class Util extends DownloadActivity {
 
         context.sendBroadcast(intent);
     }
+    
+    public static void broadcastA2dpMetaDataChange(Context context, DownloadService downloadService){
+        if (downloadService!=null){
+            
+            MusicDirectory.Entry song = downloadService.getCurrentPlaying().getSong();
+            
+            //AVRCP 
+            Intent avrcpIntent = new Intent(CM_AVRCP_METADATA_CHANGED);
+            
+            Log.d("moz", "metachanged broadcast");
+
+            if (song != null) {
+                //string data
+                avrcpIntent.putExtra("track", song.getTitle());
+                avrcpIntent.putExtra("artist", song.getArtist());
+                avrcpIntent.putExtra("album", song.getAlbum());
+                
+                //long data
+                avrcpIntent.putExtra("ListSize",(long) downloadService.getDownloads().size());
+                avrcpIntent.putExtra("id", (long) downloadService.getCurrentPlayingIndex()+1);
+                avrcpIntent.putExtra("duration", (long )downloadService.getPlayerDuration());
+                avrcpIntent.putExtra("position", (long) downloadService.getPlayerPosition());
+                
+            } else {
+                //string data
+                avrcpIntent.putExtra("track", "");
+                avrcpIntent.putExtra("artist", "");
+                avrcpIntent.putExtra("album", "");
+                
+                //long data
+                avrcpIntent.putExtra("ListSize",(long)0);
+                avrcpIntent.putExtra("id", (long) 0);
+                avrcpIntent.putExtra("duration", (long )0);
+                avrcpIntent.putExtra("position", (long) 0);  
+            }
+
+            context.sendBroadcast(avrcpIntent);
+            }
+        
+    }
 
     /**
      * <p>Broadcasts the given player state as the one being set.</p>
@@ -778,6 +823,49 @@ public class Util extends DownloadActivity {
         }
 
         context.sendBroadcast(intent);
+    }
+
+    public static void broadcastA2dpPlayStatusChange(Context context, PlayerState state, DownloadService downloadService){
+        
+        if (downloadService.getCurrentPlaying()!=null){
+            
+            // CM AVRCP PLAYSTATE CHANGE BROADCAST
+            
+            Intent avrcpIntent = new Intent(CM_AVRCP_PLAYSTATE_CHANGED);
+            
+            Log.d("moz", "playstatechanged broadcast");
+            
+            MusicDirectory.Entry song = downloadService.getCurrentPlaying().getSong();
+            
+            //string data
+            avrcpIntent.putExtra("track", song.getTitle());
+            avrcpIntent.putExtra("artist", song.getArtist());
+            avrcpIntent.putExtra("album", song.getAlbum());
+            
+            //long data
+            avrcpIntent.putExtra("ListSize",(long) downloadService.getDownloads().size());
+            avrcpIntent.putExtra("id", (long) downloadService.getCurrentPlayingIndex()+1);
+            avrcpIntent.putExtra("duration", (long )downloadService.getPlayerDuration());
+            avrcpIntent.putExtra("position", (long) downloadService.getPlayerPosition());
+            
+            switch (state) {
+                case STARTED:
+                    avrcpIntent.putExtra("playing", true);
+                    break;
+                case STOPPED:
+                    avrcpIntent.putExtra("playing", false);
+                    break;
+                case PAUSED:
+                    avrcpIntent.putExtra("playing", false);
+                    break;
+                case COMPLETED:
+                    avrcpIntent.putExtra("playing", false);
+                    break;
+                default:
+                    return; // No need to broadcast.
+            }
+            context.sendBroadcast(avrcpIntent);
+            }
     }
     
     private static void linkButtons(Context context, RemoteViews views, boolean playerActive) {

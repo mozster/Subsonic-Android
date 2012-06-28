@@ -62,6 +62,10 @@ public class DownloadServiceImpl extends Service implements DownloadService {
     public static final String CMD_STOP = "net.sourceforge.subsonic.androidapp.CMD_STOP";
     public static final String CMD_PREVIOUS = "net.sourceforge.subsonic.androidapp.CMD_PREVIOUS";
     public static final String CMD_NEXT = "net.sourceforge.subsonic.androidapp.CMD_NEXT";
+    
+    
+    public static final String PLAYSTATUS_REQUEST = "com.android.music.playstatusrequest";
+    public static final String PLAYSTATUS_RESPONSE = "com.android.music.playstatusresponse";
 
     private final IBinder binder = new SimpleServiceBinder<DownloadService>(this);
     private MediaPlayer mediaPlayer;
@@ -398,6 +402,7 @@ public class DownloadServiceImpl extends Service implements DownloadService {
 
         if (currentPlaying != null) {
         	Util.broadcastNewTrackInfo(this, currentPlaying.getSong());
+        	Util.broadcastA2dpMetaDataChange(this, getInstance());
         } else {
             Util.broadcastNewTrackInfo(this, null);
         }
@@ -623,6 +628,7 @@ public class DownloadServiceImpl extends Service implements DownloadService {
         boolean show = this.playerState == PAUSED && playerState == PlayerState.STARTED;
         boolean hide = this.playerState == STARTED && playerState == PlayerState.PAUSED;
         Util.broadcastPlaybackStatusChange(this, playerState);
+        Util.broadcastA2dpPlayStatusChange(this, playerState, getInstance());
 
         this.playerState = playerState;
         if (show) {

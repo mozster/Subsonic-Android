@@ -109,6 +109,11 @@
 
         <meta-data a:name="android.app.default_searchable"
                    a:value="net.sourceforge.subsonic.androidapp.activity.QueryReceiverActivity"/>
+        <receiver a:name="net.sourceforge.subsonic.androidapp.receiver.A2dpIntentReceiver">
+            <intent-filter>
+                <action a:name="android.music.playstatusrequest"/>
+            </intent-filter>
+        </receiver>
 
     </application>
 
